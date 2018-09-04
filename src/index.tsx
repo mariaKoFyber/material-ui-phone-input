@@ -16,7 +16,7 @@ var CountryData = require('country-data');
 
 const maskNumber: ((value: string) => maskArray) = createNumberMask({
   prefix: '+',
-  allowLeadingZeroes: true,includeThousandsSeparator: false
+  allowLeadingZeroes: true, includeThousandsSeparator: false
 
 });
 
@@ -52,13 +52,18 @@ class PhoneInput extends React.Component {
   } as any;
 
   _onChange = (e: any) => {
-    const asyouType =new AsYouType()
-    const newphone=asyouType.input(e.target.value)
-    const CC=asyouType.country
-    const national=asyouType.getNationalNumber()
-    const newVal= (CC)? newphone.replace("+"+getPhoneCode(CC),"(+"+getPhoneCode(CC)+")") :  newphone
-    console.log("nmasha" +newVal)
-    this.setState({code:CC ? "+"+getPhoneCode(CC):this.state.code ,phone:newVal.replace(/[^\)](\s)/g,(match:string)=>match.replace(/\s/g,"-")) })
+    const asyouType = new AsYouType()
+    const newphone = asyouType.input(e.target.value)
+    const CC = asyouType.country
+    const national = asyouType.getNationalNumber()
+    lookup.countries({alpha2: CC})
+    const newVal = (CC) ? newphone.replace("+" + getPhoneCode(CC), "(+" + getPhoneCode(CC) + ")") : newphone
+    console.log("nmasha" + newVal)
+    this.setState({
+      flag: CC ? lookup.countries({alpha2: CC})[0].emoji : this.state.flag,
+      code: CC ? "+" + getPhoneCode(CC) : this.state.code,
+      phone: newVal.replace(/[^\)](\s)/g, (match: string) => match.replace(/\s/g, "-"))
+    })
   }
 
   handleClick = (event: any) => {
@@ -75,7 +80,7 @@ class PhoneInput extends React.Component {
   };
 
   handleClickitem = (event: any, cc: string, flag: string) => {
-    console.log("masha clicking "+this.state.phone)
+    console.log("masha clicking " + this.state.phone)
     const newVal = this.state.phone.replace(this.state.code, cc)
     console.log(newVal)
     this.setState({anchorEl: null, code: cc, phone: newVal, menu: close, flag: flag});
