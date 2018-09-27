@@ -1,54 +1,53 @@
-import * as React from "react";
+import * as React from "react"
 import * as ReactDOM from "react-dom"
-import TextField from "@material-ui/core/TextField/TextField";
-import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment";
-import MaskedInput, {maskArray} from "react-text-mask";
-import {createNumberMask} from "text-mask-addons/dist/textMaskAddons";
-import Button from "@material-ui/core/Button/Button";
-import CloudUploadIcon from '@material-ui/icons/CloudUpload';
-import Menu from "@material-ui/core/Menu/Menu";
-import {CountryMenuItem} from "./country-menu-item";
-import {AsYouType, getPhoneCode, parseNumber} from 'libphonenumber-js'
+import TextField from "@material-ui/core/TextField/TextField"
+import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
+import Button from "@material-ui/core/Button/Button"
+import {CountryMenuItem} from "./CountryMenuItem"
+import {AsYouType} from "libphonenumber-js"
+import Input from "@material-ui/core/Input/Input"
+import WorldIcon from "@material-ui/icons/Language"
+import ArrowIcon from "@material-ui/icons/ArrowDropDown"
+import Popover from "@material-ui/core/Popover/Popover"
+import * as _ from "lodash"
+import MenuList from "@material-ui/core/MenuList/MenuList"
+import Icon from "@material-ui/core/Icon/Icon"
+import Grid from "@material-ui/core/Grid/Grid"
 
-
-var CountryData = require('country-data');
-
-
-const maskNumber: ((value: string) => maskArray) = createNumberMask({
-  prefix: '+',
-  allowLeadingZeroes: true, includeThousandsSeparator: false
-
-});
-
-
-function NumberFormatCustom(props: any) {
-  console.log(props)
-  const {value, onChange} = props
-  return (
-    <MaskedInput
-      mask={maskNumber}
-      onChange={onChange}
-      value={value}
-      placeholderChar={'\u2000'}
-      showMask={false}
-      style={{borderWidth: "0px"}}
-    />
-  );
+const styles = {
+  worldIcon: {
+    backgroundColor: "#9B9B9B",
+    color: "FFFFFF"
+  },
+  hiddenInput: {
+    width: "0",
+    height: "0",
+    padding: "0"
+  },
+  popover: {
+    maxHeight: "14em",
+    paddingTop: 0
+  }
 }
 
 const lookup = require('country-data').lookup
 
-const allCountry = lookup.countries({status: "assigned"})
-  .filter((y: any) => y.countryCallingCodes != "")
-
-
 class PhoneInput extends React.Component {
+
+  getCountries = () => {
+    const countries = lookup.countries({status: "assigned"})
+      .filter((y: any) => y.countryCallingCodes != "")
+    return _.sortBy(countries, "name")
+  }
+
   state = {
-    value: "",
     code: "",
     phone: "",
     anchorEl: null,
-    flag: null
+    flag: null,
+    search: "",
+    allCountries: this.getCountries(),
+    countryCode: ""
   } as any;
 
   _onChange = (e: any) => {
@@ -56,82 +55,107 @@ class PhoneInput extends React.Component {
     const newphone = asyouType.input(e.target.value)
     const CC = asyouType.country
     const national = asyouType.getNationalNumber()
-    lookup.countries({alpha2: CC})
-    const newVal = (CC) ? newphone.replace("+" + getPhoneCode(CC), "(+" + getPhoneCode(CC) + ")") : newphone
-    console.log("nmasha" + newVal)
+    const country = lookup.countries({alpha2: CC})
+    const newVal = CC ? newphone.replace(country[0].countryCallingCodes[0],
+      "(" + country[0].countryCallingCodes[0] + ")") : newphone
     this.setState({
-      flag: CC ? lookup.countries({alpha2: CC})[0].emoji : this.state.flag,
-      code: CC ? "+" + getPhoneCode(CC) : this.state.code,
-      phone: newVal.replace(/[^\)](\s)/g, (match: string) => match.replace(/\s/g, "-"))
+      flag: CC ? country[0].emoji : this.state.flag,
+      code: CC ? country[0].countryCallingCodes[0] : this.state.code,
+      phone: newVal.replace(/[^)](\s)/g, (match: string) =>
+        match.replace(/\s/g, "-")),
+      countryCode: CC ? CC : "",
+      phoneNoPrefix: national
     })
   }
 
   handleClick = (event: any) => {
-    //todo mashs
-    this.setState({anchorEl: event.currentTarget, menu: true});
+    this.setState({anchorEl: event.currentTarget});
   };
 
   handleClose = () => {
-    this.setState({anchorEl: null, menu: false});
+    this.setState({anchorEl: null});
   };
 
   handleOpen = () => {
-    this.setState({anchorEl: null, menu: true});
+    this.setState({anchorEl: null});
   };
 
-  handleClickitem = (event: any, cc: string, flag: string) => {
-    console.log("masha clicking " + this.state.phone)
-    const newVal = this.state.phone.replace(this.state.code, cc)
-    console.log(newVal)
-    this.setState({anchorEl: null, code: cc, phone: newVal, menu: close, flag: flag});
+  handleClickItem = (event: any, code: string, flag: string, countryCode: string) => {
+    const phone = this.state.phone ? this.state.phone.replace(this.state.code, code) :
+      "(" + code.replace(/\s/g, "-") + ")"
+    this.setState({
+      anchorEl: null,
+      search: "",
+      code,
+      phone,
+      flag,
+      countryCode
+    });
   };
 
   handleChange = (event: any) => {
-    console.log("masha setting " + event)
     this.setState({[event.target.name]: event.target.value});
   };
 
+  handleSearch = (event: any) => {
+    this.setState({search: event.target.value});
+  }
 
   render() {
-    const conPhone = new AsYouType()
-    const {anchorEl} = this.state;
-    {
-      console.log(CountryData.countries.all.length)
-    }
+    const {anchorEl, search, allCountries} = this.state;
+    console.log("countryCode ", this.state.countryCode)
+    console.log("phoneNoPrefix", this.state.phoneNoPrefix)
+    return <Grid container direction={"column"}>
 
-    return <div>
+      <Grid item>
+        <TextField
+          id={"PhoneInput"}
+          onChange={this._onChange}
+          label={"Phone Input"}
+          value={this.state.phone}
+          style={{paddingBottom: 0, width: "420px"}}
+          InputProps={{
+            startAdornment:
+              <InputAdornment position="start" style={{marginRight: 0}}>
+                <Button onClick={this.handleClick} style={{padding: 0}}>
+                  <Grid>
+                    {this.state.flag ? <Icon>{this.state.flag}</Icon> : <WorldIcon style={styles.worldIcon}/>}
+                  </Grid>
+                  <Grid>
+                    <ArrowIcon/>
+                  </Grid>
+                </Button>
+              </InputAdornment>
+          }}
+        />
+      </Grid>
 
-      <TextField
-        label="With normal TextField"
-        id="simple-start-adornment"
-        value={this.state.phone}
-        onChange={this._onChange}
-        InputProps={{
-          startAdornment: <InputAdornment position="start">
-            <Menu
-              id="simple-menu"
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onChange={this.handleChange}
-              onClose={this.handleClose}
-            >
-              {allCountry.map((x: any) => <CountryMenuItem
-                onClick={event => this.handleClickitem(event, x.countryCallingCodes[0], x.emoji)}
+      <Grid item>
+        <Popover open={Boolean(anchorEl)}
+                 style={styles.popover}
+                 onClose={this.handleClose}
+                 anchorOrigin={{
+                   vertical: "bottom",
+                   horizontal: "left",
+                 }}
+        >
+          <Input onChange={this.handleSearch} style={styles.hiddenInput} autoFocus disableUnderline
+                 inputProps={{padding: 0}}/>
+          <MenuList style={{padding: 0}}>
+            {allCountries.map((x: any) =>
+              <CountryMenuItem
+                key={x.name}
+                onClick={event => this.handleClickItem(event, x.countryCallingCodes[0], x.emoji, x.alpha2)}
                 flagSVG={x.emoji}
                 name={x.name}
-                countryCode={x.countryCallingCodes}/>)}
-            </Menu>
-            <Button onClick={this.handleClick}>
-              {this.state.flag ? this.state.flag : <CloudUploadIcon/>}
-            </Button>
+                countryCode={x.countryCallingCodes}
+                search={search}
+              />)}
+          </MenuList>
+        </Popover>
+      </Grid>
 
-          </InputAdornment>,
-          // inputComponent: NumberFormatCustom,
-        }}
-      />
-      {/*{CountryData.countries.all.map((x:any)=>x).filter((y:any)=>(y.emoji !=undefined || y.countryCallingCodes!=undefined)).map((z:any)=><div>{[z.countryCallingCodes,"  " ,z.name, z.emoji]}</div>)}*/}
-      {/*{ (lookup.countries({status: "assigned"})).filter((y:any)=>y.countryCallingCodes!="").map((x:any)=>[x.countryCallingCodes[0],x.name,x.emoji,"      "])}*/}
-    </div>
+    </Grid>
   }
 }
 
