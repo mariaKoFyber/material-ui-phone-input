@@ -1,5 +1,4 @@
 import * as React from "react"
-import * as ReactDOM from "react-dom"
 import TextField from "@material-ui/core/TextField/TextField"
 import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
 import Button from "@material-ui/core/Button/Button"
@@ -8,11 +7,14 @@ import {AsYouType} from "libphonenumber-js"
 import Input from "@material-ui/core/Input/Input"
 import WorldIcon from "@material-ui/icons/Language"
 import ArrowIcon from "@material-ui/icons/ArrowDropDown"
-import Popover from "@material-ui/core/Popover/Popover"
 import * as _ from "lodash"
 import MenuList from "@material-ui/core/MenuList/MenuList"
 import Icon from "@material-ui/core/Icon/Icon"
 import Grid from "@material-ui/core/Grid/Grid"
+import Paper from "@material-ui/core/Paper/Paper";
+import Popper from "@material-ui/core/Popper/Popper";
+import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener";
+import MenuItem from "@material-ui/core/MenuItem/MenuItem";
 
 const styles = {
   worldIcon: {
@@ -26,13 +28,27 @@ const styles = {
   },
   popover: {
     maxHeight: "14em",
-    paddingTop: 0
+  },
+  list: {
+    overflow: "auto",
+    maxHeight: "14em",
+  },
+  popper: {
+    zIndex: 999
   }
 }
 
 const lookup = require('country-data').lookup
 
-class PhoneInput extends React.Component {
+
+export interface PhoneInputProps {
+  phoneValueOnChange: (a: string) => void,
+  countryValueOnChange: (a: string) => void,
+  error: boolean,
+  helperText: string
+}
+
+export default class PhoneInput extends React.Component<PhoneInputProps> {
 
   getCountries = () => {
     const countries = lookup.countries({status: "assigned"})
@@ -51,6 +67,7 @@ class PhoneInput extends React.Component {
   } as any;
 
   _onChange = (e: any) => {
+    const {phoneValueOnChange, countryValueOnChange} = this.props
     const asyouType = new AsYouType()
     const newphone = asyouType.input(e.target.value)
     const CC = asyouType.country
@@ -66,6 +83,8 @@ class PhoneInput extends React.Component {
       countryCode: CC ? CC : "",
       phoneNoPrefix: national
     })
+    phoneValueOnChange(national)
+    countryValueOnChange(CC ? CC : "")
   }
 
   handleClick = (event: any) => {
@@ -102,18 +121,19 @@ class PhoneInput extends React.Component {
   }
 
   render() {
+    const {error, helperText} = this.props;
     const {anchorEl, search, allCountries} = this.state;
-    console.log("countryCode ", this.state.countryCode)
-    console.log("phoneNoPrefix", this.state.phoneNoPrefix)
     return <Grid container direction={"column"}>
-
       <Grid item>
         <TextField
-          id={"PhoneInput"}
+          id={"phone-input"}
           onChange={this._onChange}
-          label={"Phone Input"}
+          label={"Phone Number"}
+          fullWidth={true}
           value={this.state.phone}
-          style={{paddingBottom: 0, width: "420px"}}
+          style={{paddingBottom: 0}}
+          error={error}
+          helperText={helperText}
           InputProps={{
             startAdornment:
               <InputAdornment position="start" style={{marginRight: 0}}>
@@ -131,33 +151,28 @@ class PhoneInput extends React.Component {
       </Grid>
 
       <Grid item>
-        <Popover open={Boolean(anchorEl)}
-                 style={styles.popover}
-                 onClose={this.handleClose}
-                 anchorOrigin={{
-                   vertical: "bottom",
-                   horizontal: "left",
-                 }}
-        >
-          <Input onChange={this.handleSearch} style={styles.hiddenInput} autoFocus disableUnderline
-                 inputProps={{padding: 0}}/>
-          <MenuList style={{padding: 0}}>
-            {allCountries.map((x: any) =>
-              <CountryMenuItem
-                key={x.name}
-                onClick={event => this.handleClickItem(event, x.countryCallingCodes[0], x.emoji, x.alpha2)}
-                flagSVG={x.emoji}
-                name={x.name}
-                countryCode={x.countryCallingCodes}
-                search={search}
-              />)}
-          </MenuList>
-        </Popover>
+        <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement={"bottom-start"} style={styles.popper}>
+          <Paper>
+            <ClickAwayListener onClickAway={this.handleClose}>
+              <MenuList style={styles.list}>
+                <MenuItem style={styles.hiddenInput}>
+                  <Input onChange={this.handleSearch} autoFocus disableUnderline
+                         inputProps={{padding: 0}}/>
+                </MenuItem>
+                {allCountries.map((x: any) =>
+                  <CountryMenuItem
+                    key={x.name}
+                    onClick={event => this.handleClickItem(event, x.countryCallingCodes[0], x.emoji, x.alpha2)}
+                    flagSVG={x.emoji}
+                    name={x.name}
+                    countryCode={x.countryCallingCodes}
+                    search={search}
+                  />)}
+              </MenuList>
+            </ClickAwayListener>
+          </Paper>
+        </Popper>
       </Grid>
-
     </Grid>
   }
 }
-
-const rootElement = document.getElementById("root");
-ReactDOM.render(<PhoneInput/>, rootElement);

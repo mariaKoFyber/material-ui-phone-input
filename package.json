@@ -2,7 +2,7 @@
   "name": "material-ui-phone-input",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
     "build": "rm -rf build && npm run compile",
@@ -11,7 +11,7 @@
     "compile-watch": "tsc -w -p tsconfig.prod.json",
     "test": "mocha '{test,xe2e}/**/*.ts*' --require=ts-node/register --require mocha-clean",
     "bundle-watch": "webpack-dev-server --open",
-    "publish-local": "npm publish --@revdesk:registry=http://localhost:4873 --force",
+    "publish-local": "npm publish --registry=http://localhost:4873 --force",
     "lint": "tslint '{src,test}/**/*.ts*'",
     "bundle": "webpack --config webpack.config.prod.js",
     "bundle-dev": "webpack",
