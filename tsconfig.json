@@ -13,7 +13,6 @@
       "es2015.promise",
       "es2015.core"
     ],
-    "target": "es2015",
     "declaration": true,
     "outDir": "build",
     "jsx": "react",

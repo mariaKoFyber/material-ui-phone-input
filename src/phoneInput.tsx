@@ -7,14 +7,17 @@ import {AsYouType} from "libphonenumber-js"
 import Input from "@material-ui/core/Input/Input"
 import WorldIcon from "@material-ui/icons/Language"
 import ArrowIcon from "@material-ui/icons/ArrowDropDown"
-import * as _ from "lodash"
 import MenuList from "@material-ui/core/MenuList/MenuList"
 import Icon from "@material-ui/core/Icon/Icon"
 import Grid from "@material-ui/core/Grid/Grid"
-import Paper from "@material-ui/core/Paper/Paper";
-import Popper from "@material-ui/core/Popper/Popper";
-import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener";
-import MenuItem from "@material-ui/core/MenuItem/MenuItem";
+import Paper from "@material-ui/core/Paper/Paper"
+import Popper from "@material-ui/core/Popper/Popper"
+import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener"
+import MenuItem from "@material-ui/core/MenuItem/MenuItem"
+import withStyles from "@material-ui/core/styles/withStyles"
+import {Country} from "./country"
+
+const sortBy = require("lodash/sortBy")
 
 const styles = {
   worldIcon: {
@@ -35,36 +38,39 @@ const styles = {
   },
   popper: {
     zIndex: 999
-  }
+  },
+  input: {marginRight: 0},
+  textField: {paddingBottom: 0},
+  button: {padding: 0}
 }
 
-const lookup = require('country-data').lookup
-
+const lookup = require("country-data").lookup
 
 export interface PhoneInputProps {
   phoneValueOnChange: (a: string) => void,
   countryValueOnChange: (a: string) => void,
   error: boolean,
   helperText: string
+  classes?: Record<string, string>
 }
 
-export default class PhoneInput extends React.Component<PhoneInputProps> {
+function getCountries(): Country[] {
+  const countries = lookup.countries({status: "assigned"})
+    .filter((y: any) => y.countryCallingCodes != "")
+  return sortBy(countries, "name")
+}
 
-  getCountries = () => {
-    const countries = lookup.countries({status: "assigned"})
-      .filter((y: any) => y.countryCallingCodes != "")
-    return _.sortBy(countries, "name")
-  }
-
+@(withStyles(styles) as any)
+export class PhoneInput extends React.Component<PhoneInputProps> {
   state = {
     code: "",
     phone: "",
-    anchorEl: null,
-    flag: null,
+    anchorEl: null as any,
+    flag: "",
     search: "",
-    allCountries: this.getCountries(),
+    allCountries: getCountries(),
     countryCode: ""
-  } as any;
+  }
 
   _onChange = (e: any) => {
     const {phoneValueOnChange, countryValueOnChange} = this.props
@@ -88,16 +94,12 @@ export default class PhoneInput extends React.Component<PhoneInputProps> {
   }
 
   handleClick = (event: any) => {
-    this.setState({anchorEl: event.currentTarget});
-  };
+    this.setState({anchorEl: event.currentTarget})
+  }
 
   handleClose = () => {
-    this.setState({anchorEl: null});
-  };
-
-  handleOpen = () => {
-    this.setState({anchorEl: null});
-  };
+    this.setState({anchorEl: null})
+  }
 
   handleClickItem = (event: any, code: string, flag: string, countryCode: string) => {
     const phone = this.state.phone ? this.state.phone.replace(this.state.code, code) :
@@ -109,20 +111,27 @@ export default class PhoneInput extends React.Component<PhoneInputProps> {
       phone,
       flag,
       countryCode
-    });
-  };
-
-  handleChange = (event: any) => {
-    this.setState({[event.target.name]: event.target.value});
-  };
-
-  handleSearch = (event: any) => {
-    this.setState({search: event.target.value});
+    })
   }
 
+  handleSearch = (event: any) => {
+    this.setState({search: event.target.value})
+  }
+
+  renderCountry = (country: Country) =>
+    <CountryMenuItem
+      key={country.name}
+      onClick={event => this.handleClickItem(event, country.countryCallingCodes[0], country.emoji, country.alpha2)}
+      flagSVG={country.emoji}
+      name={country.name}
+      countryCode={country.countryCallingCodes[0]}
+      search={this.state.search}
+    />
+
   render() {
-    const {error, helperText} = this.props;
-    const {anchorEl, search, allCountries} = this.state;
+    const {error, helperText, classes: classesProp} = this.props
+    const {anchorEl, allCountries} = this.state
+    const classes = classesProp!
     return <Grid container direction={"column"}>
       <Grid item>
         <TextField
@@ -131,15 +140,15 @@ export default class PhoneInput extends React.Component<PhoneInputProps> {
           label={"Phone Number"}
           fullWidth={true}
           value={this.state.phone}
-          style={{paddingBottom: 0}}
+          className={classes.textField}
           error={error}
           helperText={helperText}
           InputProps={{
             startAdornment:
-              <InputAdornment position="start" style={{marginRight: 0}}>
-                <Button onClick={this.handleClick} style={{padding: 0}}>
+              <InputAdornment position="start" className={classes.input}>
+                <Button onClick={this.handleClick} className={classes.button}>
                   <Grid>
-                    {this.state.flag ? <Icon>{this.state.flag}</Icon> : <WorldIcon style={styles.worldIcon}/>}
+                    {this.state.flag ? <Icon>{this.state.flag}</Icon> : <WorldIcon className={classes.worldIcon}/>}
                   </Grid>
                   <Grid>
                     <ArrowIcon/>
@@ -151,23 +160,15 @@ export default class PhoneInput extends React.Component<PhoneInputProps> {
       </Grid>
 
       <Grid item>
-        <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement={"bottom-start"} style={styles.popper}>
+        <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement={"bottom-start"} className={classes.popper}>
           <Paper>
             <ClickAwayListener onClickAway={this.handleClose}>
-              <MenuList style={styles.list}>
-                <MenuItem style={styles.hiddenInput}>
+              <MenuList className={classes.list}>
+                <MenuItem className={classes.hiddenInput}>
                   <Input onChange={this.handleSearch} autoFocus disableUnderline
                          inputProps={{padding: 0}}/>
                 </MenuItem>
-                {allCountries.map((x: any) =>
-                  <CountryMenuItem
-                    key={x.name}
-                    onClick={event => this.handleClickItem(event, x.countryCallingCodes[0], x.emoji, x.alpha2)}
-                    flagSVG={x.emoji}
-                    name={x.name}
-                    countryCode={x.countryCallingCodes}
-                    search={search}
-                  />)}
+                {allCountries.map(this.renderCountry)}
               </MenuList>
             </ClickAwayListener>
           </Paper>

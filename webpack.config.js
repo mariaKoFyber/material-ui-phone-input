@@ -5,7 +5,6 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 module.exports = {
   entry: {
     phone: ["./build/index.js"],
-    // nfp: ["./build/nfp/entry"]
   },
   output: {
     path: path.join(__dirname, 'public'),
