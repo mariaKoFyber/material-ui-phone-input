@@ -12,7 +12,7 @@
     "test": "mocha 'test/**/*.ts*' --require=ts-node/register --require mocha-clean",
     "bundle-watch": "webpack-dev-server --open",
     "publish-local": "npm publish --registry=http://localhost:4873 --force",
-    "lint": "tslint '{src,test}/**/*.ts*'",
+    "lint": "tslint --fix '{src,test}/**/*.ts*'",
     "bundle": "webpack --config webpack.config.prod.js",
     "bundle-dev": "webpack",
     "coverage": "nyc --extension=.ts --extension=.tsx --include='src/**/*.ts*' --all --reporter=html mocha --require=ts-node/register --require=source-map-support/register --recursive 'test/**/*.ts*'"

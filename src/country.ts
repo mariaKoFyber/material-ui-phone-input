@@ -4,4 +4,3 @@ export interface Country {
   alpha2: string
   countryCallingCodes: string[]
 }
-ֶ
