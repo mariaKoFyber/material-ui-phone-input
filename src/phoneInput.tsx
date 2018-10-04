@@ -1,23 +1,38 @@
-import * as React from "react"
-import TextField from "@material-ui/core/TextField/TextField"
-import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
 import Button from "@material-ui/core/Button/Button"
-import {CountryMenuItem} from "./CountryMenuItem"
-import {AsYouType} from "libphonenumber-js"
-import Input from "@material-ui/core/Input/Input"
-import WorldIcon from "@material-ui/icons/Language"
-import ArrowIcon from "@material-ui/icons/ArrowDropDown"
-import MenuList from "@material-ui/core/MenuList/MenuList"
-import Icon from "@material-ui/core/Icon/Icon"
+import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener"
 import Grid from "@material-ui/core/Grid/Grid"
+import Input from "@material-ui/core/Input/Input"
+import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
+import MenuItem from "@material-ui/core/MenuItem/MenuItem"
+import MenuList from "@material-ui/core/MenuList/MenuList"
 import Paper from "@material-ui/core/Paper/Paper"
 import Popper from "@material-ui/core/Popper/Popper"
-import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener"
-import MenuItem from "@material-ui/core/MenuItem/MenuItem"
 import withStyles from "@material-ui/core/styles/withStyles"
+import TextField from "@material-ui/core/TextField/TextField"
+import ArrowIcon from "@material-ui/icons/ArrowDropDown"
+import {AsYouType} from "libphonenumber-js"
+import * as React from "react"
 import {Country} from "./country"
+import {CountryIcon} from "./countryIcon"
+import {CountryMenuItem} from "./countryMenuItem"
 
 const sortBy = require("lodash/sortBy")
+
+const lookup = require("country-data").lookup
+
+function getCountries(): Country[] {
+  const countries = lookup.countries({status: "assigned"})
+    .filter((y: any) => y.countryCallingCodes != "")
+  return sortBy(countries, "name")
+}
+
+const allCountries = getCountries()
+
+const unknownCountry: Country = {
+  name: "",
+  alpha2: "",
+  countryCallingCodes: [""]
+}
 
 const styles = {
   worldIcon: {
@@ -44,53 +59,43 @@ const styles = {
   button: {padding: 0}
 }
 
-const lookup = require("country-data").lookup
-
 export interface PhoneInputProps {
-  phoneValueOnChange: (a: string) => void,
-  countryValueOnChange: (a: string) => void,
+  onBlur?: () => any,
+  onChange?: (alpha2: string, phoneNumber: string) => any,
   error: boolean,
   helperText: string
   classes?: Record<string, string>
 }
 
-function getCountries(): Country[] {
-  const countries = lookup.countries({status: "assigned"})
-    .filter((y: any) => y.countryCallingCodes != "")
-  return sortBy(countries, "name")
-}
-
 @(withStyles(styles) as any)
 export class PhoneInput extends React.Component<PhoneInputProps> {
   state = {
-    code: "",
     phone: "",
     anchorEl: null as any,
-    flag: "",
-    search: "",
-    allCountries: getCountries(),
-    countryCode: ""
+    country: unknownCountry,
+    countries: allCountries,
+    search: ""
   }
 
-  _onChange = (e: any) => {
-    const {phoneValueOnChange, countryValueOnChange} = this.props
-    const asyouType = new AsYouType()
-    const newphone = asyouType.input(e.target.value)
-    const CC = asyouType.country
-    const national = asyouType.getNationalNumber()
-    const country = lookup.countries({alpha2: CC})
-    const newVal = CC ? newphone.replace(country[0].countryCallingCodes[0],
-      "(" + country[0].countryCallingCodes[0] + ")") : newphone
+  handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const {onChange} = this.props
+    const asYouType = new AsYouType()
+    // console.log("asYouType", e.target.value)
+    // const lastChar = e.target.value.charAt(e.target.value.length-1)
+    let phone = asYouType.input(e.target.value)
+    const alpha2 = asYouType.country
+    const national = asYouType.getNationalNumber()
+    const country = lookup.countries({alpha2})[0] || unknownCountry
+    // const newVal = alpha2 ? newphone.replace(country[0].countryCallingCodes[0],
+    //   "(" + country[0].countryCallingCodes[0] + ")") : newphone
+    const code = country.countryCallingCodes[0]
+    phone = alpha2 ? phone.replace(code, `(${code})`) : phone
+    phone = phone.replace(/[^)]\s/g, (match: string) => match.replace(/\s/g, "-"))
     this.setState({
-      flag: CC ? country[0].emoji : this.state.flag,
-      code: CC ? country[0].countryCallingCodes[0] : this.state.code,
-      phone: newVal.replace(/[^)](\s)/g, (match: string) =>
-        match.replace(/\s/g, "-")),
-      countryCode: CC ? CC : "",
-      phoneNoPrefix: national
+      phone,
+      country,
     })
-    phoneValueOnChange(national)
-    countryValueOnChange(CC ? CC : "")
+    onChange && onChange(alpha2, national)
   }
 
   handleClick = (event: any) => {
@@ -101,42 +106,55 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
     this.setState({anchorEl: null})
   }
 
-  handleClickItem = (event: any, code: string, flag: string, countryCode: string) => {
-    const phone = this.state.phone ? this.state.phone.replace(this.state.code, code) :
-      "(" + code.replace(/\s/g, "-") + ")"
+  handleSearch = (event: any) => {
+    const search = event.target.value
+    const countries = allCountries.filter(country => new RegExp(`${search}.*`, "i").test(country.name))
+    console.log("search", search, countries)
     this.setState({
-      anchorEl: null,
-      search: "",
-      code,
-      phone,
-      flag,
-      countryCode
+      search,
+      countries
     })
   }
 
-  handleSearch = (event: any) => {
-    this.setState({search: event.target.value})
+  handleCountryClick = (country: Country) => {
+    const {country: selectedCountry, phone: selectedPhone} = this.state
+
+    const currentCallingCode = `(${selectedCountry.countryCallingCodes[0]})`
+    const newCallingCode = `(${country.countryCallingCodes[0]})`
+    const phone = selectedPhone.indexOf(currentCallingCode) !== -1 ? selectedPhone.replace(
+      currentCallingCode,
+      newCallingCode
+    ) : newCallingCode
+    this.setState({
+      anchorEl: null,
+      search: "",
+      phone,
+      country
+    })
   }
 
   renderCountry = (country: Country) =>
     <CountryMenuItem
       key={country.name}
-      onClick={event => this.handleClickItem(event, country.countryCallingCodes[0], country.emoji, country.alpha2)}
-      flagSVG={country.emoji}
-      name={country.name}
-      countryCode={country.countryCallingCodes[0]}
+      country={country}
+      onClick={this.handleCountryClick}
       search={this.state.search}
     />
 
+  handleBlur = () => {
+    const {onBlur} = this.props
+    onBlur && onBlur()
+  }
+
   render() {
     const {error, helperText, classes: classesProp} = this.props
-    const {anchorEl, allCountries} = this.state
+    const {anchorEl, countries, country} = this.state
     const classes = classesProp!
     return <Grid container direction={"column"}>
       <Grid item>
         <TextField
-          id={"phone-input"}
-          onChange={this._onChange}
+          onChange={this.handleChange}
+          onBlur={this.handleBlur}
           label={"Phone Number"}
           fullWidth={true}
           value={this.state.phone}
@@ -148,7 +166,7 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
               <InputAdornment position="start" className={classes.input}>
                 <Button onClick={this.handleClick} className={classes.button}>
                   <Grid>
-                    {this.state.flag ? <Icon>{this.state.flag}</Icon> : <WorldIcon className={classes.worldIcon}/>}
+                    <CountryIcon country={country}/>
                   </Grid>
                   <Grid>
                     <ArrowIcon/>
@@ -166,9 +184,9 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
               <MenuList className={classes.list}>
                 <MenuItem className={classes.hiddenInput}>
                   <Input onChange={this.handleSearch} autoFocus disableUnderline
-                         inputProps={{padding: 0}}/>
+                         inputProps={{padding: 0}} value={this.state.search}/>
                 </MenuItem>
-                {allCountries.map(this.renderCountry)}
+                {countries.map(this.renderCountry)}
               </MenuList>
             </ClickAwayListener>
           </Paper>
