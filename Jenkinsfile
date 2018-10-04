@@ -1,0 +1,3 @@
+node('Console CI Slave') {
+
+}
