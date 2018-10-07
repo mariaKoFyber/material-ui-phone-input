@@ -11,11 +11,14 @@
     "compile-watch": "tsc -w -p tsconfig.prod.json",
     "test": "mocha 'test/**/*.ts*' --require=ts-node/register --require mocha-clean",
     "bundle-watch": "webpack-dev-server --open",
-    "publish-local": "npm publish --registry=http://localhost:4873 --force",
+    "publish-local": "npm publish --@material-ui:registry=http://localhost:4873 --force",
     "lint": "tslint --fix '{src,test}/**/*.ts*'",
     "bundle": "webpack --config webpack.config.prod.js",
     "bundle-dev": "webpack",
-    "coverage": "nyc --extension=.ts --extension=.tsx --include='src/**/*.ts*' --all --reporter=html mocha --require=ts-node/register --require=source-map-support/register --recursive 'test/**/*.ts*'"
+    "coverage": "nyc --extension=.ts --extension=.tsx --include='src/**/*.ts*' --all --reporter=html mocha --require=ts-node/register --require=source-map-support/register --recursive 'test/**/*.ts*'",
+    "codecov": "nyc report --reporter=json && codecov -f coverage/*.json",
+    "lock": "git add 'package-lock.json' && (git diff-index --quiet HEAD || git commit -m 'Lock')",
+    "cd": "standard-version -m \"chore(release): %s [ci skip]\" && git push --follow-tags origin master && npm publish"
   },
   "files": [
     "build"
@@ -25,8 +28,6 @@
   "peerDependencies": {
     "@material-ui/core": "^1.4.1",
     "@material-ui/icons": "^2.0.0",
-    "moment": "*",
-    "moment-range": "*",
     "react": "*"
   },
   "dependencies": {
@@ -69,13 +70,16 @@
     "@types/react": "^16.0.31",
     "@types/react-dom": "^16.0.5",
     "@types/react-transition-group": "^2.0.11",
-    "@types/react-virtualized": "^9.7.10",
+    "@types/react-virtualized": "^9.18.7",
     "@types/webpack-env": "^1.13.6",
     "babel-core": "^6.26.3",
+    "codecov": "^3.1.0",
     "mocha": "^5.2.0",
     "mocha-clean": "^1.0.0",
+    "nyc": "^13.0.1",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
+    "standard-version": "^4.4.0",
     "ts-node": "^7.0.1",
     "tslint": "^5.10.0",
     "typescript": "^3.1.1",

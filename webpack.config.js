@@ -16,10 +16,6 @@ module.exports = {
   devServer: {
     contentBase: path.join(__dirname, 'public'),
     historyApiFallback: true,
-    proxy: {
-      '/api': 'http://localhost:5000',
-      '/auth': 'http://localhost:5000'
-    }
   },
   plugins: [
     new BundleAnalyzerPlugin()

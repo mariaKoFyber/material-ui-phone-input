@@ -1,7 +1,6 @@
 import * as React from "react";
-import MenuItem from "@material-ui/core/MenuItem/MenuItem"
+import MenuItem, {MenuItemProps} from "@material-ui/core/MenuItem/MenuItem"
 import Grid from "@material-ui/core/Grid/Grid"
-import Icon from "@material-ui/core/Icon/Icon"
 import Typography from "@material-ui/core/Typography"
 import withStyles from "@material-ui/core/styles/withStyles";
 import {Country} from "./country"
@@ -33,14 +32,14 @@ const styles = {
     color: "#1D0047", fontSize: "1em", fontWeight: 300
   },
   menuItem: {
-    padding: "0.5em",
+    padding: "0 24px",
     width: 300
   }
 }
 
-export interface CountryItemProps {
+export interface CountryItemProps extends MenuItemProps {
   search: string
-  onClick: (country: Country) => any
+  onSelectCountry: (country: Country) => any
   classes?: Record<string, string>
   country: Country
 }
@@ -60,13 +59,13 @@ export class CountryMenuItem extends React.Component<CountryItemProps> {
   }
 
   handleClick = () => {
-    this.props.onClick(this.props.country)
+    this.props.onSelectCountry(this.props.country)
   }
 
   render() {
-    const {onClick, country, search, classes: classesProp} = this.props
+    const {country, search, classes: classesProp, ...props} = this.props
     const classes = classesProp!
-    return <MenuItem onClick={this.handleClick} className={classes.menuItem}>
+    return <MenuItem component="div" onClick={this.handleClick} className={classes.menuItem} {...props}>
       <Grid container direction="row">
         <Grid item>
           <CountryIcon country={country}/>
