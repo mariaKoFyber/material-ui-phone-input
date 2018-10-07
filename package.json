@@ -17,7 +17,7 @@
     "bundle-dev": "webpack",
     "coverage": "nyc --extension=.ts --extension=.tsx --include='src/**/*.ts*' --all --reporter=html mocha --require=ts-node/register --require=source-map-support/register --recursive 'test/**/*.ts*'",
     "codecov": "nyc report --reporter=json && codecov -f coverage/*.json",
-    "lock": "git add 'package-lock.json' && (git diff-index --quiet HEAD || git commit -m 'Lock')",
+    "lock": "git add 'package-lock.json' && (git diff-index --quiet HEAD || git commit -m 'Lock [ci ckip]')",
     "cd": "standard-version -m \"chore(release): %s [ci skip]\" && npm publish && git push --follow-tags origin master"
   },
   "files": [
