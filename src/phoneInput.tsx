@@ -1,13 +1,13 @@
 import ButtonBase from "@material-ui/core/ButtonBase/ButtonBase"
 import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener"
 import Grid from "@material-ui/core/Grid/Grid"
+import Input from "@material-ui/core/Input"
 import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
 import Paper from "@material-ui/core/Paper/Paper"
 import Popper from "@material-ui/core/Popper/Popper"
 import {Theme} from "@material-ui/core/styles/createMuiTheme"
 import MuiThemeProvider from "@material-ui/core/styles/MuiThemeProvider"
 import withStyles from "@material-ui/core/styles/withStyles"
-import TextField from "@material-ui/core/TextField/TextField"
 import Typography from "@material-ui/core/Typography/Typography"
 import ArrowIcon from "@material-ui/icons/ArrowDropDown"
 import {AsYouType} from "libphonenumber-js"
@@ -190,26 +190,23 @@ export class PhoneInput extends React.Component<PhoneInputProps, PhoneInputState
     const {anchorEl, countries, country} = this.state
     const classes = classesProp!
 
-    const field = <TextField
+    const field = <Input
       onChange={this.handleChange}
       onBlur={this.handleBlur}
-      label={label}
       fullWidth
       value={this.state.phone}
       className={classes.textField}
       error={error}
-      helperText={helperText}
-      InputProps={{
-        startAdornment:
-          <InputAdornment position="start" className={classes.input}>
-            <ButtonBase component="div" onClick={this.handleClick} className={classes.button}>
-              <Grid container direction="row" alignItems="center" wrap="nowrap">
-                <CountryIcon country={country} className={classes.buttonFlag}/>
-                <ArrowIcon/>
-              </Grid>
-            </ButtonBase>
-          </InputAdornment>
-      }}
+      startAdornment={
+        <InputAdornment position="start" className={classes.input}>
+          <ButtonBase component="div" onClick={this.handleClick} className={classes.button}>
+            <Grid container direction="row" alignItems="center" wrap="nowrap">
+              <CountryIcon country={country} className={classes.buttonFlag}/>
+              <ArrowIcon/>
+            </Grid>
+          </ButtonBase>
+        </InputAdornment>
+      }
     />
 
     const list = <Paper className={classes.paper}>
