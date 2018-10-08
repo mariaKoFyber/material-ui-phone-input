@@ -1,4 +1,4 @@
-import Button from "@material-ui/core/Button/Button"
+import ButtonBase from "@material-ui/core/ButtonBase/ButtonBase"
 import ClickAwayListener from "@material-ui/core/ClickAwayListener/ClickAwayListener"
 import Grid from "@material-ui/core/Grid/Grid"
 import InputAdornment from "@material-ui/core/InputAdornment/InputAdornment"
@@ -12,8 +12,8 @@ import * as React from "react"
 import {Country} from "./country"
 import {CountryIcon} from "./countryIcon"
 import {CountryMenuItem} from "./countryMenuItem"
-import {List, ListRowProps} from "react-virtualized"
-import Input from "@material-ui/core/Input/Input";
+import {List, ListRowProps} from "react-virtualized/dist/commonjs/List"
+import Typography from "@material-ui/core/Typography/Typography"
 
 const sortBy = require("lodash/sortBy")
 
@@ -39,35 +39,62 @@ const styles = {
     color: "FFFFFF"
   },
   hiddenInput: {
-    width: "0",
-    height: "0",
-    padding: "0"
+    width: 0,
+    height: 0,
+    padding: 0,
+    outline: "none",
+    border: "none",
+  },
+  hiddenInputRoot: {
+    overflow: "hidden"
   },
   popover: {
     maxHeight: "14em",
   },
   list: {
-    overflow: "auto",
-    maxHeight: "14em",
+    outline: "none" as any
   },
   popper: {
     zIndex: 999
   },
   input: {marginRight: 0},
   textField: {paddingBottom: 0},
-  button: {padding: 0}
+  button: {
+    padding: 0
+  },
+  buttonFlag: {
+    display: "flex",
+    marginLeft: 8
+  },
+  paper: {
+    display: "flex",
+    borderRadius: 0
+  },
+
 }
 
 export interface PhoneInputProps {
   onBlur?: () => any,
   onChange?: (alpha2: string, phoneNumber: string) => any,
-  error: boolean,
-  helperText: string
+  error?: boolean,
+  helperText?: string
   classes?: Record<string, string>
+  width?: number,
+  label?: string
+}
+
+export interface PhoneInputState {
+  phone: string
+  anchorEl: HTMLElement | null
+  country: Country
+  countries: Country[]
+  search: string
 }
 
 @(withStyles(styles) as any)
-export class PhoneInput extends React.Component<PhoneInputProps> {
+export class PhoneInput extends React.Component<PhoneInputProps, PhoneInputState> {
+  list: List | null = null
+
   state = {
     phone: "",
     anchorEl: null as any,
@@ -76,10 +103,10 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
     search: ""
   }
 
-  handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+  handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     const {onChange} = this.props
     const asYouType = new AsYouType()
-    let phone = asYouType.input(e.target.value)
+    let phone = asYouType.input(event.target.value)
     const alpha2 = asYouType.country
     const national = asYouType.getNationalNumber()
     const country = lookup.countries({alpha2})[0] || unknownCountry
@@ -93,7 +120,7 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
     onChange && onChange(alpha2, national)
   }
 
-  handleClick = (event: any) => {
+  handleClick: React.MouseEventHandler<HTMLElement> = (event) => {
     this.setState({anchorEl: event.currentTarget})
   }
 
@@ -101,9 +128,9 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
     this.setState({anchorEl: null})
   }
 
-  handleSearch = (event: any) => {
+  handleSearch: React.ChangeEventHandler<HTMLInputElement> = (event) => {
     const search = event.target.value
-    const countries = allCountries.filter(country => new RegExp(`${search}.*`, "i").test(country.name))
+    const countries = allCountries.filter(country => new RegExp(search, "i").test(country.name))
     this.setState({
       search,
       countries
@@ -122,7 +149,8 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
       anchorEl: null,
       search: "",
       phone,
-      country
+      country,
+      countries: allCountries
     })
   }
 
@@ -143,52 +171,56 @@ export class PhoneInput extends React.Component<PhoneInputProps> {
     />
   }
 
+  listRef = (list: List) => {
+    this.list = list
+  }
+
+  componentDidUpdate(prevProps: PhoneInputProps, prevState: PhoneInputState) {
+    if (prevState.countries != this.state.countries) {
+      this.list && this.list.forceUpdateGrid()
+    }
+  }
+
   render() {
-    const {error, helperText, classes: classesProp} = this.props
+    const {error, helperText, label, classes: classesProp} = this.props
     const {anchorEl, countries, country} = this.state
     const classes = classesProp!
-    return <Grid container direction={"column"}>
-      <Grid item>
-        <TextField
-          onChange={this.handleChange}
-          onBlur={this.handleBlur}
-          label={"Phone Number"}
-          fullWidth={true}
-          value={this.state.phone}
-          className={classes.textField}
-          error={error}
-          helperText={helperText}
-          InputProps={{
-            startAdornment:
-              <InputAdornment position="start" className={classes.input}>
-                <Button onClick={this.handleClick} className={classes.button}>
-                  <Grid>
-                    <CountryIcon country={country}/>
-                  </Grid>
-                  <Grid>
-                    <ArrowIcon/>
-                  </Grid>
-                </Button>
-              </InputAdornment>
-          }}
-        />
-      </Grid>
-
-      <Grid item>
-        <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement={"bottom-start"} className={classes.popper}>
-          <Paper>
-            <ClickAwayListener onClickAway={this.handleClose}>
-              <Paper>
-                <Input onChange={this.handleSearch} autoFocus disableUnderline
-                       inputProps={{padding: 0}} value={this.state.search} className={classes.hiddenInput}/>
-                <List height={250} rowHeight={36} rowCount={countries.length} width={300}
-                      rowRenderer={this.rowRenderer} overscanRowCount={10}
-                />
-              </Paper>
-            </ClickAwayListener>
+    return <React.Fragment>
+      <TextField
+        onChange={this.handleChange}
+        onBlur={this.handleBlur}
+        label={label}
+        fullWidth={true}
+        value={this.state.phone}
+        className={classes.textField}
+        error={error}
+        helperText={helperText}
+        InputProps={{
+          startAdornment:
+            <InputAdornment position="start" className={classes.input}>
+              <ButtonBase component="div" onClick={this.handleClick} className={classes.button}>
+                <Grid container direction="row" alignItems="center">
+                  <CountryIcon country={country} className={classes.buttonFlag}/>
+                  <ArrowIcon/>
+                </Grid>
+              </ButtonBase>
+            </InputAdornment>
+        }}
+      />
+      <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement={"bottom-start"} className={classes.popper}>
+        <ClickAwayListener onClickAway={this.handleClose}>
+          <Paper className={classes.paper}>
+            <div className={classes.hiddenInputRoot}>
+              <input className={classes.hiddenInput} onChange={this.handleSearch} autoFocus value={this.state.search}/>
+            </div>
+            {!countries.length ? <Typography>There is no country match the result</Typography> :
+              <List ref={this.listRef} height={250} rowHeight={36} rowCount={countries.length}
+                    className={classes.list}
+                    width={this.props.width || 331} rowRenderer={this.rowRenderer} overscanRowCount={10}
+              />}
           </Paper>
-        </Popper>
-      </Grid>
-    </Grid>
+        </ClickAwayListener>
+      </Popper>
+    </React.Fragment>
   }
 }
